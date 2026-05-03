@@ -1,0 +1,15 @@
+{
+  "description": "Non-secret local test fixture for interviewer copy/paste verification.",
+  "hashInputs": {
+    "empty": "",
+    "abc": "abc"
+  },
+  "ecdsaP256": {
+    "message": "hello world",
+    "tamperedMessage": "hello world!",
+    "privateKeyPkcs8DerHex": "308187020100301306072a8648ce3d020106082a8648ce3d030107046d306b020101042053740f5b8793410a03b5cb321cde7c69054d9609e4c4febb9aa7dea7b96479c1a14403420004f25f2c126d1ba888391967d5a183a92c05bec16d4fb0e3ef22b590c01339ffafccac9def91effb5d63f1e1edef24de528d89d4a72f215c4c06df5f0acea1c532",
+    "publicKeySpkiDerHex": "3059301306072a8648ce3d020106082a8648ce3d03010703420004f25f2c126d1ba888391967d5a183a92c05bec16d4fb0e3ef22b590c01339ffafccac9def91effb5d63f1e1edef24de528d89d4a72f215c4c06df5f0acea1c532",
+    "signatureRawRsHex": "277ad5603a7318174a2a149e5307ff08a7158e7c77f57ef8c9ba5c6fcab6ee5c718585624d8382f7d2ce960b5486155c27a654e444e54bd00730475f4a25cc20",
+    "expectedVerificationResult": "valid"
+  }
+}

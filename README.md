@@ -1,59 +1,87 @@
 # ThalesCase
 
-This is a case assignment for Thales Singapore AI Engineering Role. The demo application will require the following submissions:
+Local-only web proof of concept for:
 
-1. '/specs/' containing the following files:
-    - `requirements.md` — clear functional requirements + acceptance criteria
-    - `tech-spec.md` — technical choices, architecture, key flows, error handling, security 
-    - `verification.md` — how you verified correctness (tests, known vectors, steps)
-2. '/app/' containing the following files:
-    - Source Code
-    - Instructions to run application locally (web) or a simulator (mobile)
-3. '/`README.md` '
-    — setup and steps to run the application.
-    - How to use the UI and application
+1. SHA-256 hashing of UTF-8 plain text, displayed as lowercase HEX.
+2. ECDSA P-256 key generation, signing, and verification, with keys and raw `r || s` signatures displayed as lowercase HEX.
 
-### Rules / constraints
+The implementation is in `app/` and uses Vite, React, TypeScript, Vitest, and the browser Web Crypto API. It does not require a backend, database, account, cloud service, or network service at runtime.
 
-*   App must run **locally** (no required cloud services).
-*   You may use **one AI-assisted coding tool** (Claude Code / Codex CLI / Gemini CLI / GitHub Copilot / Cline / Continue.dev, etc.).
-*   You are expected to **review what the AI generates**, fix issues, and explain key decisions in `tech-spec.md` and `verification.md`.
+## Setup
 
-***
+From the repository root:
 
-# Assignment 1 — Local Web App PoC: Hashing + ECDSA (P‑256)
+```bash
+cd app
+npm install
+```
 
-### Goal
+## Run Locally
 
-Build a small **local web application** with a simple UI to perform:
+```bash
+cd app
+npm run dev
+```
 
-1.  **SHA‑256 hashing** of plain text → display hash as **HEX**
-2.  **ECC P‑256 keypair generation**, **sign**, and **verify** → display keys + signatures as **HEX**
+Open the local URL printed by Vite, usually:
 
+```text
+http://localhost:5173/
+```
 
-### Non-functional constraints
+For a production build:
 
-*   Runs on a local machine via one of:
-    *   static page, or local dev server
-*   No external services required
-*   Provide reproducible run steps in `README.md`
+```bash
+cd app
+npm run build
+npm run preview
+```
 
-### Local test configuration
+## Run Tests
 
-*   `app/settings.example.json` contains optional, non-secret sample values for copy/paste verification.
-*   Interviewer-provided keys or signatures should be treated as local test fixtures, not confidential secrets.
-*   Local `.env*` files and `app/settings.local.json` are ignored by git for safety.
+```bash
+cd app
+npm test
+```
 
-### Suggested stretch goals (optional)
+The automated tests cover SHA-256 known vectors, HEX validation, P-256 key generation/export, signing, verification failure cases, and the fixture in `app/settings.example.json`.
 
-*   Add known test vectors for SHA‑256 and ECDSA in `verification.md`
-*   Add automated tests (unit/integration)
-*   Export/import keys (file or copy/paste)
+## How To Use The UI
 
---- 
-## What we’re evaluating (high level)
+### SHA-256
 
-*   Spec quality: clarity, completeness, testability
-*   AI instructions: how you guided the assistant and constrained outputs
-*   Code review: correctness, security hygiene, maintainability
-*   Verification: proof it works (tests + evidence)
+1. Enter text in the SHA-256 plain-text field.
+2. Click `Hash`.
+3. Copy the lowercase HEX digest from the output field.
+
+Known values:
+
+- Empty input: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
+- `abc`: `ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad`
+
+### ECDSA P-256
+
+1. Click `Generate Keypair`.
+2. The public key appears as SPKI DER HEX.
+3. The private key appears as PKCS#8 DER HEX for assignment transparency.
+4. Enter a message and click `Sign`.
+5. The signature appears as raw ECDSA `r || s` HEX.
+6. Click `Verify` to verify the signature against the message and public key.
+7. Change the verify message or signature to confirm verification returns `Invalid signature`.
+
+### Reviewer Import
+
+Use the `Reviewer Import` controls to paste external or fixture keys:
+
+- Public key import expects P-256 SPKI DER HEX.
+- Private key import expects P-256 PKCS#8 DER HEX.
+- Invalid HEX is rejected before Web Crypto import runs.
+
+`app/settings.example.json` contains non-secret sample values for copy/paste verification. These values are local fixtures only and should not be treated as confidential key material.
+
+## Security Notes
+
+- Crypto operations run locally in the browser through Web Crypto.
+- The app does not send messages, keys, hashes, or signatures to any service.
+- Keys are kept in browser memory for the current session only.
+- The app does not write keys to localStorage, sessionStorage, IndexedDB, cookies, or files.

@@ -12,3 +12,9 @@ venv.bak/
 
 # Local app settings overrides
 app/settings.local.json
+
+# Node/Vite build artifacts
+app/node_modules/
+app/dist/
+app/coverage/
+.playwright-cli/

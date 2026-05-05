@@ -1,6 +1,6 @@
-# Verification Plan
+# Verification
 
-This document defines the verification work to run after implementation. Pre-build status: not executed because the app source has not been created yet.
+This document records the verification work for the implemented local web app.
 
 ## SHA-256 Known Vectors
 
@@ -30,7 +30,7 @@ The signature is a fixed sample generated from the included private key. Future 
 
 ## Automated Test Scenarios
 
-If automated tests are included, they should cover:
+Automated tests cover:
 
 - `sha256Hex("")` returns the empty-string SHA-256 vector.
 - `sha256Hex("abc")` returns the standard `abc` SHA-256 vector.
@@ -43,36 +43,80 @@ If automated tests are included, they should cover:
 - Verification fails when one byte of the signature is changed.
 - Verification fails when the signature is checked with a different generated public key.
 
+Executed command:
+
+```bash
+cd app
+npm test
+```
+
+Result on 2026-05-04:
+
+```text
+Test Files  3 passed (3)
+Tests       11 passed (11)
+```
+
+Production build check:
+
+```bash
+cd app
+npm run build
+```
+
+Result on 2026-05-04:
+
+```text
+✓ 32 modules transformed.
+✓ built in 358ms
+```
+
 ## Manual Crypto Flow Verification
 
 Run these checks in a browser after starting the local app from the README.
 
+Manual browser used on 2026-05-03:
+
+```text
+HeadlessChrome/147.0.0.0 on macOS, driven by Playwright CLI
+Local URL: http://127.0.0.1:5173/
+```
+
 1. Hash `abc`.
    - Expected: `ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad`.
+   - Result: Pass.
 
 2. Hash an empty input.
    - Expected: `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`.
+   - Result: Covered by automated test.
 
 3. Generate a P-256 keypair.
    - Expected: public key and private key fields contain lowercase HEX.
+   - Result: Pass.
 
 4. Sign `hello world` with the generated private key.
    - Expected: signature field contains 128 lowercase HEX characters.
+   - Result: Pass.
 
 5. Verify the generated signature against `hello world` and the matching public key.
    - Expected: Valid.
+   - Result: Pass.
 
 6. Change the verify message to `hello world!` without changing the signature.
    - Expected: Invalid signature.
+   - Result: Pass.
 
 7. If optional copy/paste import is implemented, paste the sample message, public key, and signature from `app/settings.example.json`.
    - Expected: Valid.
+   - Result: Pass.
 
 8. If optional copy/paste import is implemented, change one HEX character in the pasted signature.
    - Expected: Invalid signature or validation error, depending on whether the modified signature remains valid HEX.
+   - Result: Covered by automated test.
 
 9. If optional copy/paste import is implemented, paste invalid HEX into a key field, such as `xyz`.
    - Expected: clear validation error before import.
+   - Result: Pass with `HEX input contains non-HEX characters.`
 
 ## Manual UI Usability Verification
 
@@ -80,27 +124,37 @@ Run these checks during the same browser walkthrough:
 
 1. Confirm the page has separate SHA-256 and ECDSA P-256 sections.
    - Expected: the two workflows are easy to distinguish.
+   - Result: Pass.
 
 2. Confirm action buttons are explicit.
    - Expected: visible controls for `Hash`, `Generate Keypair`, `Sign`, and `Verify`.
+   - Result: Pass.
 
 3. Confirm outputs are selectable text.
    - Expected: hash, key, and signature HEX can be selected/copied from the page.
+   - Result: Pass; outputs are text areas.
 
 4. Confirm long HEX outputs do not break the layout.
    - Expected: long values wrap or scroll within their output areas.
+   - Result: Pass in desktop browser smoke test.
 
 5. Trigger at least one validation error, such as signing before generating a keypair.
    - Expected: the error appears near the relevant action.
+   - Result: Pass for invalid reviewer HEX import.
 
 6. Resize to a normal laptop-width browser window.
    - Expected: the app remains usable without overlapping controls or unreadable output.
+   - Result: Pass in default Playwright desktop viewport.
 
 ## Evidence to Record After Implementation
 
-After implementation, update this document with:
+Additional checks on 2026-05-03:
 
-- The exact test command that was run.
-- The test result summary.
-- The browser and version used for manual verification.
-- Any known limitations or deviations from this plan.
+- Browser console errors after smoke test: 0.
+- localStorage entries after smoke test: none.
+- sessionStorage entries after smoke test: none.
+- Screenshot artifact captured during verification: `.playwright-cli/page-2026-05-03T14-42-58-443Z.png` (ignored by git).
+
+Known limitations:
+
+- ECDSA signatures are intentionally randomized by Web Crypto, so generated signatures are verified by behavior rather than deterministic byte equality.

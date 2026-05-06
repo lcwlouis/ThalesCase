@@ -18,12 +18,12 @@ Vector 2:
 
 ## ECDSA Sample Fixture
 
-`app/settings.example.json` contains an optional, non-secret sample P-256 keypair and signature for copy/paste verification if the optional import flow is implemented.
+`app/settings.example.json` contains a non-secret sample P-256 keypair and signature for copy/paste verification. Key import was originally listed as an optional stretch goal in the brief and is included in this implementation.
 
 - Message: `hello world`
 - Private key format: PKCS#8 DER HEX
 - Public key format: SPKI DER HEX
-- Signature format: raw ECDSA `r || s` HEX
+- Signature formats: raw ECDSA `r || s` HEX in the fixture; DER HEX can be derived from the raw signature and verified through the app's DER mode.
 - Expected verification result: Valid
 
 The signature is a fixed sample generated from the included private key. Future signatures for the same message may differ because ECDSA signing is randomized.
@@ -37,8 +37,11 @@ Automated tests cover:
 - HEX parser accepts uppercase or lowercase HEX and normalizes output to lowercase.
 - HEX parser rejects odd-length strings and non-HEX characters.
 - P-256 key generation exports non-empty PKCS#8 private key HEX and SPKI public key HEX.
-- Optional import path: imported sample private key can sign `hello world`.
-- Optional import path: imported sample public key verifies the sample `hello world` signature.
+- Imported sample private key can sign `hello world`.
+- Imported sample public key verifies the sample `hello world` signature.
+- Raw P-256 signatures convert to DER HEX and back.
+- DER signatures with positive integer padding convert to raw P-256 HEX.
+- DER-format signatures verify when DER mode is selected.
 - Verification fails when the message is changed to `hello world!`.
 - Verification fails when one byte of the signature is changed.
 - Verification fails when the signature is checked with a different generated public key.
@@ -57,6 +60,13 @@ Test Files  3 passed (3)
 Tests       11 passed (11)
 ```
 
+Result on 2026-05-06 after adding DER/raw signature format support:
+
+```text
+Test Files  3 passed (3)
+Tests       14 passed (14)
+```
+
 Production build check:
 
 ```bash
@@ -69,6 +79,13 @@ Result on 2026-05-04:
 ```text
 ✓ 32 modules transformed.
 ✓ built in 358ms
+```
+
+Result on 2026-05-06 after adding DER/raw signature format support:
+
+```text
+✓ 32 modules transformed.
+✓ built in 331ms
 ```
 
 ## Manual Crypto Flow Verification
@@ -106,17 +123,25 @@ Local URL: http://127.0.0.1:5173/
    - Expected: Invalid signature.
    - Result: Pass.
 
-7. If optional copy/paste import is implemented, paste the sample message, public key, and signature from `app/settings.example.json`.
+7. Paste the sample message, public key, and signature from `app/settings.example.json`.
    - Expected: Valid.
    - Result: Pass.
 
-8. If optional copy/paste import is implemented, change one HEX character in the pasted signature.
+8. Change one HEX character in the pasted signature.
    - Expected: Invalid signature or validation error, depending on whether the modified signature remains valid HEX.
    - Result: Covered by automated test.
 
-9. If optional copy/paste import is implemented, paste invalid HEX into a key field, such as `xyz`.
+9. Paste invalid HEX into a key field, such as `xyz`.
    - Expected: clear validation error before import.
    - Result: Pass with `HEX input contains non-HEX characters.`
+
+10. Select DER signature format, sign `hello world`, and verify without changing the message.
+    - Expected: Valid.
+    - Result: Pass in Codex in-app browser on 2026-05-06.
+
+11. Paste a DER ECDSA P-256/SHA-256 signature and select DER signature format.
+    - Expected: Valid when the public key and message match.
+    - Result: Pass using the DER-encoded fixture signature in Codex in-app browser on 2026-05-06.
 
 ## Manual UI Usability Verification
 
@@ -158,3 +183,4 @@ Additional checks on 2026-05-03:
 Known limitations:
 
 - ECDSA signatures are intentionally randomized by Web Crypto, so generated signatures are verified by behavior rather than deterministic byte equality.
+- DER signature support is an interoperability layer; Web Crypto still signs and verifies raw `r || s` internally.

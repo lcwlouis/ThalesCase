@@ -18,3 +18,7 @@ app/node_modules/
 app/dist/
 app/coverage/
 .playwright-cli/
+
+# Python 
+__pycache__/
+*.pyc

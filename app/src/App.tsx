@@ -1,8 +1,11 @@
 import { useMemo, useState } from "react";
 import {
+  derSignatureHexToRawP256Hex,
   generateP256KeyPair,
   importP256PrivateKeyFromPkcs8Hex,
   importP256PublicKeyFromSpkiHex,
+  rawP256SignatureHexToDerHex,
+  type SignatureFormat,
   signP256Sha256,
   verifyP256Sha256
 } from "./crypto/ecdsa";
@@ -36,6 +39,7 @@ export default function App() {
 
   const [verifyMessage, setVerifyMessage] = useState("hello world");
   const [verifyStatus, setVerifyStatus] = useState<Status>(idleStatus);
+  const [signatureFormat, setSignatureFormat] = useState<SignatureFormat>("raw");
 
   const [importPublicHex, setImportPublicHex] = useState("");
   const [importPrivateHex, setImportPrivateHex] = useState("");
@@ -98,8 +102,8 @@ export default function App() {
     }
 
     try {
-      const signature = await signP256Sha256(privateKey, signMessage);
-      setSignatureHex(signature);
+      const rawSignature = await signP256Sha256(privateKey, signMessage);
+      setSignatureHex(formatSignatureForDisplay(rawSignature, signatureFormat));
       setVerifyMessage(signMessage);
       setSignStatus({ type: "success", message: "Message signed." });
     } catch (error) {
@@ -114,13 +118,13 @@ export default function App() {
     }
 
     if (!signatureHex.trim()) {
-      setVerifyStatus({ type: "error", message: "Provide a raw r||s signature before verification." });
+      setVerifyStatus({ type: "error", message: `Provide a ${signatureFormatLabel(signatureFormat)} signature before verification.` });
       return;
     }
 
     try {
       const keyForVerification = publicKey ?? (await importP256PublicKeyFromSpkiHex(publicKeyHex));
-      const valid = await verifyP256Sha256(keyForVerification, verifyMessage, signatureHex);
+      const valid = await verifyP256Sha256(keyForVerification, verifyMessage, signatureHex, signatureFormat);
       setPublicKey(keyForVerification);
       setVerifyStatus({
         type: "result",
@@ -128,6 +132,24 @@ export default function App() {
       });
     } catch (error) {
       setVerifyStatus({ type: "error", message: getErrorMessage(error) });
+    }
+  }
+
+  function handleSignatureFormatChange(nextFormat: SignatureFormat) {
+    if (nextFormat === signatureFormat) {
+      return;
+    }
+
+    try {
+      setSignatureHex(convertSignatureFormat(signatureHex, signatureFormat, nextFormat));
+      setSignatureFormat(nextFormat);
+      setVerifyStatus(idleStatus);
+    } catch (error) {
+      setSignatureFormat(nextFormat);
+      setVerifyStatus({
+        type: "error",
+        message: `Signature format changed, but the existing signature could not be converted: ${getErrorMessage(error)}`
+      });
     }
   }
 
@@ -188,6 +210,18 @@ export default function App() {
         </div>
         <StatusMessage status={keyStatus} />
 
+        <div className="format-control">
+          <label htmlFor="signature-format">Signature format</label>
+          <select
+            id="signature-format"
+            value={signatureFormat}
+            onChange={(event) => handleSignatureFormatChange(event.target.value as SignatureFormat)}
+          >
+            <option value="raw">Raw r||s HEX</option>
+            <option value="der">DER HEX</option>
+          </select>
+        </div>
+
         <div className="workflow">
           <div>
             <h3>Sign</h3>
@@ -207,7 +241,7 @@ export default function App() {
               value={verifyMessage}
               onChange={(event) => setVerifyMessage(event.target.value)}
             />
-            <label htmlFor="signature">Raw r||s signature HEX</label>
+            <label htmlFor="signature">{signatureFormatLabel(signatureFormat)} signature</label>
             <textarea
               id="signature"
               value={signatureHex}
@@ -254,6 +288,25 @@ export default function App() {
       </section>
     </main>
   );
+}
+
+function formatSignatureForDisplay(rawSignatureHex: string, signatureFormat: SignatureFormat): string {
+  return signatureFormat === "der" ? rawP256SignatureHexToDerHex(rawSignatureHex) : rawSignatureHex;
+}
+
+function convertSignatureFormat(
+  signatureHex: string,
+  currentFormat: SignatureFormat,
+  nextFormat: SignatureFormat
+): string {
+  if (!signatureHex.trim() || currentFormat === nextFormat) {
+    return signatureHex;
+  }
+  return nextFormat === "der" ? rawP256SignatureHexToDerHex(signatureHex) : derSignatureHexToRawP256Hex(signatureHex);
+}
+
+function signatureFormatLabel(signatureFormat: SignatureFormat): string {
+  return signatureFormat === "der" ? "DER HEX" : "Raw r||s HEX";
 }
 
 function StatusMessage({ status }: { status: Status }) {

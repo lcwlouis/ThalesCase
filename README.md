@@ -3,7 +3,7 @@
 Local-only web proof of concept for:
 
 1. SHA-256 hashing of UTF-8 plain text, displayed as lowercase HEX.
-2. ECDSA P-256 key generation, signing, and verification, with keys and raw `r || s` signatures displayed as lowercase HEX.
+2. ECDSA P-256 key generation, signing, and verification, with keys and signatures displayed as lowercase HEX.
 
 The implementation is in `app/` and uses Vite, React, TypeScript, Vitest, and the browser Web Crypto API. It does not require a backend, database, account, cloud service, or network service at runtime.
 
@@ -44,7 +44,7 @@ cd app
 npm test
 ```
 
-The automated tests cover SHA-256 known vectors, HEX validation, P-256 key generation/export, signing, verification failure cases, and the fixture in `app/settings.example.json`.
+The automated tests cover SHA-256 known vectors, HEX validation, P-256 key generation/export, raw/DER signature conversion, signing, verification failure cases, and the fixture in `app/settings.example.json`.
 
 ## How To Use The UI
 
@@ -65,9 +65,10 @@ Known values:
 2. The public key appears as SPKI DER HEX.
 3. The private key appears as PKCS#8 DER HEX for assignment transparency.
 4. Enter a message and click `Sign`.
-5. The signature appears as raw ECDSA `r || s` HEX.
-6. Click `Verify` to verify the signature against the message and public key.
-7. Change the verify message or signature to confirm verification returns `Invalid signature`.
+5. Choose a signature format: raw ECDSA `r || s` HEX or DER HEX.
+6. The signature appears in the selected HEX format.
+7. Click `Verify` to verify the signature against the message and public key.
+8. Change the verify message or signature to confirm verification returns `Invalid signature`.
 
 ### Reviewer Import
 
@@ -78,6 +79,35 @@ Use the `Reviewer Import` controls to paste external or fixture keys:
 - Invalid HEX is rejected before Web Crypto import runs.
 
 `app/settings.example.json` contains non-secret sample values for copy/paste verification. These values are local fixtures only and should not be treated as confidential key material.
+
+## Local ECDSA Verification Helper
+
+Use `tools/ecdsa_p256_tool.py` to verify P-256 signatures locally instead of pasting private keys into online tools.
+
+Convert a DER signature HEX to raw `r || s` HEX if you want to use the app's raw mode:
+
+```bash
+python3 tools/ecdsa_p256_tool.py der-to-raw 3045022018e35c212f695e8c2b2b41c521e681d06bf26a5720942be7447ece47863eb29f022100c1341fb738065b620fb4f89b5be40703e9862cc6b79daeb0ccab0dccb0d27f71
+```
+
+Convert PEM keys to the DER HEX formats expected by the app:
+
+```bash
+python3 tools/ecdsa_p256_tool.py pem-to-hex --kind public --pem-file public.pem
+python3 tools/ecdsa_p256_tool.py pem-to-hex --kind private --pem-file private.pem
+```
+
+Verify a raw app signature:
+
+```bash
+python3 tools/ecdsa_p256_tool.py verify --public-key-hex <spki-der-hex> --message "hello world" --signature-hex <raw-rs-hex> --signature-format raw
+```
+
+Verify an online-tool DER signature directly:
+
+```bash
+python3 tools/ecdsa_p256_tool.py verify --public-key-hex <spki-der-hex> --message "hello world" --signature-hex <der-signature-hex> --signature-format der
+```
 
 ## Security Notes
 
